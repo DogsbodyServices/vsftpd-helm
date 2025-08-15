@@ -54,7 +54,7 @@ spec:
             - name: ftp-storage
               mountPath: /data
           securityContext:
-            runAsNonRoot: true
+            runAsNonRoot: false
             capabilities:
               drop:
                 - ALL

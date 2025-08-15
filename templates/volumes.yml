@@ -18,6 +18,7 @@ metadata:
   name: {{ .Release.Name }}-pvc
   namespace: {{ .Values.namespace }}
 spec:
+  storageClassName: {{ .Values.storageClassName | default "standard" }}
   accessModes:
     - ReadWriteOnce
   resources:

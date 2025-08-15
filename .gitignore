@@ -1,1 +1,4 @@
 my-values.yml
+
+# Ignore tgz files
+**.tgz

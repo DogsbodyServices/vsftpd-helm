@@ -42,6 +42,10 @@ stages:
     steps:
     - checkout: self
 
+    - task: HelmInstaller@1
+      inputs:
+        helmVersionToInstall: 'latest'
+
     - task: HelmDeploy@1
       displayName: Login to ACR for Helm
       inputs:

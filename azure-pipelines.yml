@@ -12,47 +12,18 @@ variables:
   tag: '$(Build.BuildId)'
 
 stages:
-- stage: Build
-  displayName: Build image
+- stage: Verify Helm Chart
+  displayName: 'Verify Helm Chart'
   jobs:
-  - job: Build
-    displayName: Build
+  - job: VerifyHelmChart
+    displayName: 'Verify Helm Chart'
     pool:
-      vmImage: ubuntu-latest
+      vmImage: 'ubuntu-latest'
     steps:
-    - task: Docker@2
-      displayName: Docker login
+    - checkout: self
+    - task: HelmInstaller@1
       inputs:
-        command: login
-        containerRegistry: push-dogsbody.azurecr.io
-    - task: Docker@2
-      displayName: Docker login to GitHub container registry
-      inputs:
-        command: login
-        containerRegistry: github-container-registry
-
-    - task: Docker@2
-      displayName: Build an image
-      inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        repository: vsftpd_container
-        tags: |
-          - latest
-          - DogsbodyServices/vsftpd_container:latest
-
-
-    - task: Docker@2
-      displayName: Push to ACR
-      inputs:
-        command: push
-        containerRegistry: push-dogsbody.azurecr.io
-        repository: vsftpd_container
-        tags: latest
-    - task: Docker@2
-      displayName: Push to GitHub container registry
-      inputs:
-        command: push
-        containerRegistry: github-container-registry
-        repository: vsftpd_container
-        tags: latest
+        helmVersionToInstall: 'latest'
+    - script: |
+        helm lint ./helm-chart
+      displayName: 'Lint Helm Chart'

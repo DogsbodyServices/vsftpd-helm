@@ -32,7 +32,7 @@ stages:
       displayName: 'Lint Helm Chart'
 - stage : Package_Helm_Chart
   displayName: 'Package Helm Chart'
-  dependsOn: Verify Helm Chart
+  dependsOn: Verify_Helm_Chart
   jobs:
   - job: PackageHelmChart
     displayName: 'Package Helm Chart'

@@ -30,6 +30,7 @@ stages:
     - script: |
         helm lint .
       displayName: 'Lint Helm Chart'
+      
 - stage : Package_Helm_Chart
   displayName: 'Package Helm Chart'
   dependsOn: Verify_Helm_Chart
@@ -40,13 +41,16 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - checkout: self
+
     - task: HelmDeploy@1
       displayName: Login to ACR for Helm
       inputs:
+        connectionType: 'None'
         command: 'login'
         azureSubscriptionForACR: '$(ACR_SC)'
         azureResourceGroupForACR: '$(ACR_RG)'
         azureContainerRegistry: '$(ACR_NAME)'
+
     - task: HelmDeploy@1
       displayName: 'Package Helm Chart'
       inputs:

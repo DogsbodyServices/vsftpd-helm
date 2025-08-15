@@ -10,6 +10,9 @@ resources:
 
 variables:
   tag: '$(Build.BuildId)'
+  ACR_SC: push-dogsbody.azurecr.io
+  ACR_RG: the_dc_space
+  ACR_NAME: dogsbody
 
 stages:
 - stage: Verify Helm Chart
@@ -25,5 +28,33 @@ stages:
       inputs:
         helmVersionToInstall: 'latest'
     - script: |
-        helm lint ./helm-chart
+        helm lint .
       displayName: 'Lint Helm Chart'
+- stage : Package Helm Chart
+  displayName: 'Package Helm Chart'
+  dependsOn: Verify Helm Chart
+  jobs:
+  - job: PackageHelmChart
+    displayName: 'Package Helm Chart'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+    - task: HelmDeploy@1
+      displayName: Login to ACR for Helm
+      inputs:
+        command: 'login'
+        azureSubscriptionForACR: '$(ACR_SC)'
+        azureResourceGroupForACR: '$(ACR_RG)'
+        azureContainerRegistry: '$(ACR_NAME)'
+    - task: HelmDeploy@1
+      displayName: 'Package Helm Chart'
+      inputs:
+        command: 'package'
+        chartPathForACR: '.'
+        chartNameForACR: 'vsftpd'
+        destination: '$(Build.ArtifactStagingDirectory)'
+        azureSubscriptionForACR: '$(ACR_SC)'
+        azureResourceGroupForACR: '$(ACR_RG)'
+        azureContainerRegistry: '$(ACR_NAME)'
+

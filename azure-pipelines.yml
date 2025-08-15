@@ -30,7 +30,7 @@ stages:
     - script: |
         helm lint .
       displayName: 'Lint Helm Chart'
-      
+
 - stage : Package_Helm_Chart
   displayName: 'Package Helm Chart'
   dependsOn: Verify_Helm_Chart
@@ -54,6 +54,7 @@ stages:
     - task: HelmDeploy@1
       displayName: 'Package Helm Chart'
       inputs:
+        connectionType: 'None'
         command: 'package'
         chartPathForACR: '.'
         chartNameForACR: 'vsftpd'

@@ -15,7 +15,7 @@ variables:
   ACR_NAME: dogsbody
 
 stages:
-- stage: Verify Helm Chart
+- stage: Verify_Helm_Chart
   displayName: 'Verify Helm Chart'
   jobs:
   - job: VerifyHelmChart
@@ -30,7 +30,7 @@ stages:
     - script: |
         helm lint .
       displayName: 'Lint Helm Chart'
-- stage : Package Helm Chart
+- stage : Package_Helm_Chart
   displayName: 'Package Helm Chart'
   dependsOn: Verify Helm Chart
   jobs:

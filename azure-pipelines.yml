@@ -10,7 +10,7 @@ resources:
 
 variables:
   tag: '$(Build.BuildId)'
-  ACR_SC: push-dogsbody.azurecr.io
+  ACR_SC: ARM-SC-ADO
   ACR_RG: the_dc_space
   ACR_NAME: dogsbody
 

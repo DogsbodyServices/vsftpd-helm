@@ -1,0 +1,6 @@
+
+users: |
+  {
+    "plainftp": "$6$BWZe/CFWGwBT4QTL$jB7eibRC0F99aIIf2dZJhut9xmTwrNkzqpx41nRLgFIY9ISkiCD8Y5457qTLoRzCLGKGUp9dEok1NCsd.2Ty0/",
+    "sftp": "$6$BWZe/CFWGwBT4QTL$jB7eibRC0F99aIIf2dZJhut9xmTwrNkzqpx41nRLgFIY9ISkiCD8Y5457qTLoRzCLGKGUp9dEok1NCsd.2Ty0/"
+  }

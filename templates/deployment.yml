@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deploy
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: ftp-server
+    env: {{ .Values.environment }}
+    managed-by: Helm
+    version: {{ .Chart.Version }}
+spec:
+  selector:
+    matchLabels:
+      app: ftp-server
+  {{- if .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount }}
+  {{- else }}
+  replicas: 1
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app: ftp-server
+        env: {{ .Values.environment }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.containerPorts.ftp }}
+              name: ftp
+            - containerPort: {{ .Values.containerPorts.sftp }}
+              name: sftp
+            - containerPort: {{ .Values.containerPorts.pasvmin }}
+              name: pasvmin
+            - containerPort: {{ .Values.containerPorts.pasvmax }}
+              name: pasvmax           
+          env:
+            - name: USER_CONFIG_PATH
+              value: {{ .Values.userConfigPath | quote }}
+            - name: PASV_MIN_PORT
+              value: {{ .Values.containerPorts.pasvMin | quote }}
+            - name: PASV_MAX_PORT
+              value: {{ .Values.containerPorts.pasvMax | quote }}
+            - name: PASV_ADDRESS
+              value: {{ .Values.pasvAddress | default "127.0.0.1"}}
+          volumeMounts:
+            - name: user-config
+              mountPath: /etc/vsftpd/users.json
+              subPath: users.json
+              readOnly: true
+            - name: ftp-storage
+              mountPath: /data
+          securityContext:
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: user-config
+          configMap:
+            name: {{ .Release.Name }}-users-config
+        - name: ftp-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc

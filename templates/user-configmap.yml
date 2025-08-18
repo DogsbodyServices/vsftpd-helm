@@ -5,5 +5,5 @@ metadata:
   name: {{ .Release.Name }}-users-config
   namespace: {{ .Values.namespace }}
 data:
-  users.json: |
-    {{ .Values.users }}
+  users.json: |-
+{{ .Values.users | indent 4 }}

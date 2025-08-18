@@ -13,11 +13,7 @@ spec:
   selector:
     matchLabels:
       app: ftp-server
-  {{- if .Values.replicaCount }}
-  replicas: {{ .Values.replicaCount }}
-  {{- else }}
-  replicas: 1
-  {{- end }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   template:
     metadata:
       labels:
@@ -29,23 +25,23 @@ spec:
           image: {{ .Values.image.repository }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           ports:
-            - containerPort: {{ .Values.containerPorts.ftp }}
+            - containerPort: {{ .Values.ftp.controlPort }}
               name: ftp
-            - containerPort: {{ .Values.containerPorts.sftp }}
-              name: sftp
-            - containerPort: {{ .Values.containerPorts.pasvmin }}
+            - containerPort: {{ .Values.ftp.pasvMinPort }}
               name: pasvmin
-            - containerPort: {{ .Values.containerPorts.pasvmax }}
-              name: pasvmax           
+            - containerPort: {{ .Values.ftp.pasvMaxPort }}
+              name: pasvmax
+            - containerPort: {{ .Values.sftp.port }}
+              name: sftp    
           env:
             - name: USER_CONFIG_PATH
               value: {{ .Values.userConfigPath | quote }}
             - name: PASV_MIN_PORT
-              value: {{ .Values.containerPorts.pasvMin | quote }}
+              value: {{ .Values.ftp.pasvMinPort | quote }}
             - name: PASV_MAX_PORT
-              value: {{ .Values.containerPorts.pasvMax | quote }}
+              value: {{ .Values.ftp.pasvMaxPort | quote }}
             - name: PASV_ADDRESS
-              value: {{ .Values.pasvAddress | default "127.0.0.1"}}
+              value: {{ .Values.ftp.pasvAddress | default "127.0.0.1"}}
           volumeMounts:
             - name: user-config
               mountPath: /etc/vsftpd/users.json
@@ -55,9 +51,9 @@ spec:
               mountPath: /data
           securityContext:
             runAsNonRoot: false
-            capabilities:
-              drop:
-                - ALL
+#            capabilities:
+#              drop:
+#                - ALL
             allowPrivilegeEscalation: false
             seccompProfile:
               type: RuntimeDefault

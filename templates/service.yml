@@ -5,7 +5,7 @@ metadata:
   name: {{ .Release.Name }}-svc
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.service.type | default "ClusterIP" }}
+  type: {{ .Values.service.protocol.type | default "ClusterIP" }}
   selector:
     app: ftp-server
   ports:
@@ -15,6 +15,17 @@ spec:
     - name: sftp
       port: {{ .Values.containerPorts.sftp }}
       targetPort: {{ .Values.containerPorts.sftp }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-passive-svc
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.service.passive.type | default "NodePort" }}
+  selector:
+    app: ftp-server
+  ports:
     - name: pasvmin
       port: {{ .Values.containerPorts.pasvmin }}
       targetPort: {{ .Values.containerPorts.pasvmin }}

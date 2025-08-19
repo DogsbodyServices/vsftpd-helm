@@ -51,12 +51,13 @@ spec:
               mountPath: /data
           securityContext:
             runAsNonRoot: false
-#            capabilities:
-#              drop:
-#                - ALL
-            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+                {{ range .Values.securityContext.capabilities.drop }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
             seccompProfile:
-              type: RuntimeDefault
+              type: {{ .Values.securityContext.seccompProfile.type }}
       volumes:
         - name: user-config
           configMap:

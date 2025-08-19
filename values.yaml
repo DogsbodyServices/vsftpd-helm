@@ -16,14 +16,16 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
+# This section sets all the ports fo the FTP service
 ftp: 
   pasvAddress: ""   #Passive IP address (set to your external HAProxy)
-  controlPort: 21   #FTP control port (default: 21)
-  pasvMinPort: 10000  #Minimum passive port (example: 21100)
-  pasvMaxPort: 10250  #Maximum passive port (example: 21250)
+  controlPort: 21   #FTP control port
+  pasvMinPort: 10000  #Minimum passive port
+  pasvMaxPort: 10250  #Maximum passive port
 
+# This section sets all the ports for the SFTP service
 sftp:
-  port: 22  #SFTP port (default: 22)
+  port: 22  #SFTP port
 
 service:
   type: ClusterIP
@@ -42,8 +44,6 @@ users: |
 
 storageClassName: ""
 
-# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-imagePullSecrets: []
 # This is to override the chart name.
 nameOverride: ""
 fullnameOverride: ""
@@ -59,11 +59,12 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+  runAsNonRoot: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ""
+  allowPrivilegeEscalation: false
+  seccompProfile:
+    type: RuntimeDefault
+  runAsUser: ""

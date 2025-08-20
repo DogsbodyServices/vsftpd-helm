@@ -25,23 +25,23 @@ spec:
           image: {{ .Values.image.repository }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           ports:
-            - containerPort: {{ .Values.ftp.controlPort }}
+            - containerPort: {{ .Values.service.ftp.controlPort }}
               name: ftp
-            - containerPort: {{ .Values.ftp.pasvMinPort }}
+            - containerPort: {{ .Values.service.ftp.pasvMinPort }}
               name: pasvmin
-            - containerPort: {{ .Values.ftp.pasvMaxPort }}
+            - containerPort: {{ .Values.service.ftp.pasvMaxPort }}
               name: pasvmax
-            - containerPort: {{ .Values.sftp.port }}
+            - containerPort: {{ .Values.service.sftp.port }}
               name: sftp    
           env:
             - name: USER_CONFIG_PATH
               value: {{ .Values.userConfigPath | quote }}
             - name: PASV_MIN_PORT
-              value: {{ .Values.ftp.pasvMinPort | quote }}
+              value: {{ .Values.service.ftp.pasvMinPort | quote }}
             - name: PASV_MAX_PORT
-              value: {{ .Values.ftp.pasvMaxPort | quote }}
+              value: {{ .Values.service.ftp.pasvMaxPort | quote }}
             - name: PASV_ADDRESS
-              value: {{ .Values.ftp.pasvAddress | default "127.0.0.1"}}
+              value: {{ .Values.service.ftp.pasvAddress | default "127.0.0.1"}}
           volumeMounts:
             - name: user-config
               mountPath: /etc/vsftpd/users.json

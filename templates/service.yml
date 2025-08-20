@@ -2,33 +2,33 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-svc
+  name: {{ .Release.Name }}-sftp-svc
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.service.type | default "ClusterIP" }}
+  type: {{ .Values.service.sftp.type | default "ClusterIP" }}
   selector:
     app: ftp-server
   ports:
-    - name: ftp
-      port: {{ .Values.ftp.controlPort }}
-      targetPort: {{ .Values.ftp.controlPort }}
     - name: sftp
-      port: {{ .Values.sftp.port }}
-      targetPort: {{ .Values.sftp.port }}
+      port: {{ .Values.service.sftp.port }}
+      targetPort: {{ .Values.service.sftp.port }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-passive-svc
+  name: {{ .Release.Name }}-ftp-svc
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.service.passive.type | default "NodePort" }}
+  type: {{ .Values.service.ftp.type | default "NodePort" }}
   selector:
     app: ftp-server
   ports:
-    {{- $baseNodePort := int .Values.service.passive.nodePortPassiveMin }}
-    {{- $pasvMinPort := int .Values.ftp.pasvMinPort }}
-    {{- $pasvMaxPort := int .Values.ftp.pasvMaxPort }}
+    - name: ftp
+      port: {{ .Values.service.ftp.controlPort }}
+      targetPort: {{ .Values.service.ftp.controlPort }}
+    {{- $baseNodePort := int .Values.service.ftp.nodePortPassiveMin }}
+    {{- $pasvMinPort := int .Values.service.ftp.pasvMinPort }}
+    {{- $pasvMaxPort := int .Values.service.ftp.pasvMaxPort }}
     {{- range $i, $port := untilStep $pasvMinPort (int (add1 $pasvMaxPort)) 1 }}
     - name: pasv-{{ $port }}
       port: {{ $port }}

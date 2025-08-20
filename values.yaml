@@ -16,21 +16,16 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-# This section sets all the ports fo the FTP service
-ftp: 
-  pasvAddress: ""   #Passive IP address (set to your external HAProxy)
-  controlPort: 21   #FTP control port
-  pasvMinPort: 10000  #Minimum passive port
-  pasvMaxPort: 10250  #Maximum passive port
-
-# This section sets all the ports for the SFTP service
-sftp:
-  port: 22  #SFTP port
-
 service:
-  type: ClusterIP
-  passive:
+  sftp:
+    type: ClusterIP  # SFTP service type, default is ClusterIP
+    port: 22  #SFTP port
+  ftp:
     type: NodePort
+    pasvAddress: ""   #Passive IP address (set to your external HAProxy)
+    controlPort: 21   #FTP control port
+    pasvMinPort: 10000  #Minimum passive port
+    pasvMaxPort: 10250  #Maximum passive port
     nodePortPassiveMin: 32100  # This is the base node port for passive services, it will be incremented for each passive port.
 
 # Sets the user config path inside the container

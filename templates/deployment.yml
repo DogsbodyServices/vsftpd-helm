@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-deploy
+  name: {{ .Release.Name }}-server
   namespace: {{ .Values.namespace }}
   labels:
     app: ftp-server
@@ -51,10 +51,7 @@ spec:
               mountPath: /data
           securityContext:
             runAsNonRoot: false
-            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
-            capabilities:
-              drop:
-                {{ range .Values.securityContext.capabilities.drop }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem | default false }}
             allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
             seccompProfile:
               type: {{ .Values.securityContext.seccompProfile.type }}

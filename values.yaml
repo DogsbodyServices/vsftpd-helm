@@ -10,7 +10,7 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: dogsbody.azurecr.io/vsftpd:v1.0.0
+  repository: dogsbody.azurecr.io/vsftpd:v1.1.0
   # This sets the pull policy for images.
   pullPolicy: always
   # Overrides the image tag whose default is the chart appVersion.
@@ -58,13 +58,9 @@ podLabels: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
   runAsNonRoot: false
-  readOnlyRootFilesystem: true
-  capabilities:
-    drop:
-      - ""
+  readOnlyRootFilesystem: ""
   allowPrivilegeEscalation: false
   seccompProfile:
     type: RuntimeDefault
-  runAsUser: ""

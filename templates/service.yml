@@ -5,13 +5,27 @@ metadata:
   name: {{ .Release.Name }}-sftp-svc
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.service.sftp.type | default "ClusterIP" }}
+  type: {{ .Values.service.sftp.type }}
+  # Sets allowed Source IP's for the LoadBalancer
+{{- if .Values.service.sftp.publicIPv4 }}
+  loadBalancerIP: {{ .Values.service.sftp.publicIPv4 | quote }}
+{{- end }}
+{{- if .Values.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range .Values.service.loadBalancerSourceRanges }}
+    - {{ . | quote }}
+  {{- end }}
+{{- end }}
+  sessionAffinity: ClientIP
+  # This is to make sure real Client IP's show up in the logs.
+  externalTrafficPolicy: Local
   selector:
     app: ftp-server
   ports:
     - name: sftp
       port: {{ .Values.service.sftp.port }}
       targetPort: {{ .Values.service.sftp.port }}
+      protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -19,19 +33,31 @@ metadata:
   name: {{ .Release.Name }}-ftp-svc
   namespace: {{ .Values.namespace }}
 spec:
-  type: {{ .Values.service.ftp.type | default "NodePort" }}
+  type: {{ .Values.service.ftp.type }}
+  # Sets allowed Source IP's for the LoadBalancer
+{{- if .Values.service.ftp.publicIPv4 }}
+  loadBalancerIP: {{ .Values.service.ftp.publicIPv4 | quote }}
+{{- end }}
+{{- if .Values.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range .Values.service.loadBalancerSourceRanges }}
+    - {{ . | quote }}
+  {{- end }}
+{{- end }}
+  sessionAffinity: ClientIP
+  # This is to make sure real Client IP's show up in the logs.
+  externalTrafficPolicy: Local
   selector:
     app: ftp-server
   ports:
     - name: ftp
       port: {{ .Values.service.ftp.controlPort }}
       targetPort: {{ .Values.service.ftp.controlPort }}
-    {{- $baseNodePort := int .Values.service.ftp.nodePortPassiveMin }}
     {{- $pasvMinPort := int .Values.service.ftp.pasvMinPort }}
     {{- $pasvMaxPort := int .Values.service.ftp.pasvMaxPort }}
     {{- range $i, $port := untilStep $pasvMinPort (int (add1 $pasvMaxPort)) 1 }}
     - name: pasv-{{ $port }}
       port: {{ $port }}
       targetPort: {{ $port }}
-      nodePort: {{ add $baseNodePort $i }}
+      protocol: TCP
     {{- end }}

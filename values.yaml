@@ -18,15 +18,19 @@ image:
 
 service:
   sftp:
-    type: ClusterIP  # SFTP service type, default is ClusterIP
+    type: LoadBalancer  # SFTP service type, default is ClusterIP
     port: 22  #SFTP port
+    publicIPv4: ""  # Public IP for the SFTP service, if needed
   ftp:
-    type: NodePort
+    type: LoadBalancer
+    publicIPv4: ""  # Public IPv4 for the FTP service, if needed
     pasvAddress: ""   #Passive IP address (set to your external HAProxy)
     controlPort: 21   #FTP control port
     pasvMinPort: 10000  #Minimum passive port
-    pasvMaxPort: 10250  #Maximum passive port
-    nodePortPassiveMin: 32100  # This is the base node port for passive services, it will be incremented for each passive port.
+    pasvMaxPort: 10025  #Maximum passive port
+  loadBalancerSourceRanges: # Sets allowed Source IP's for the LoadBalancer
+    - ""
+  
 
 # Sets the user config path inside the container
 userConfigPath: "/etc/vsftpd/users.json"
@@ -36,8 +40,6 @@ environment: dev
 # This is the reference to the users.json file that is used to set the users for the vsftpd server.
 users: |
   {}
-
-storageClassName: ""
 
 # This is to override the chart name.
 nameOverride: ""

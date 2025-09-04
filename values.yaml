@@ -30,6 +30,12 @@ service:
     pasvMaxPort: 10025  #Maximum passive port
   loadBalancerSourceRanges: # Sets allowed Source IP's for the LoadBalancer
     - ""
+
+resources:
+  limits:
+    memory: "512Mi"
+  requests:
+    memory: "128Mi"
   
 
 # Sets the user config path inside the container

@@ -49,6 +49,11 @@ spec:
               readOnly: true
             - name: ftp-storage
               mountPath: /data
+          resources:
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
           securityContext:
             runAsNonRoot: false
             readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem | default false }}

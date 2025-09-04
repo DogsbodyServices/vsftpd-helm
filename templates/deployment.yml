@@ -13,8 +13,7 @@ spec:
   selector:
     matchLabels:
       app: ftp-server
-  replicas: {{ .Values.replicaCount | default 1 }}
-  minAvailable: {{ .Values.minAvailable }}
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:

@@ -54,6 +54,7 @@ spec:
               memory: {{ .Values.resources.limits.memory }}
             requests:
               memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
           securityContext:
             runAsNonRoot: false
             readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem | default false }}

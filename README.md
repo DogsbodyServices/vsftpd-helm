@@ -2,19 +2,19 @@
 
 Helm chart to deploy a VSFTPD (Very Secure FTP Daemon) server (FTP + SFTP) on Kubernetes.
 
-> **Status:** initial draft based on the current chart structure. Adjust to your image, storage class, and network.
+> **Chart Version:** 1.1.3 | **App Version:** 3.0.2
 
 ---
 
 ## What this chart does
 
-- Deploys a single `Deployment` running your VSFTPD container
-- Exposes **FTP**, **SFTP**, and **PASV** ports via a `Service`
+- Deploys a single `Deployment` running your VSFTPD container with configurable resources
+- Exposes **SFTP** via one dedicated `Service` 
+- Exposes **FTP** control and **all passive data ports** via a separate `Service`
 - Manages user credentials via a ConfigMap-mounted `users.json`
-- Provisions a `PersistentVolume` + `PersistentVolumeClaim` and mounts it at `/data`
-- (Optionally) creates a target `Namespace`
-
-> ⚠️ The included PV uses a `hostPath` and a fixed `10Gi` capacity. This is fine for local/dev clusters but **not** suitable for most managed/cloud environments. See [Storage](#storage) for safer options.
+- Provisions a `PersistentVolumeClaim` and mounts it at `/data` (supports dynamic provisioning)
+- Creates a target `Namespace` if specified
+- Includes a `PodDisruptionBudget` for high availability
 
 ---
 
@@ -38,20 +38,10 @@ environment: "prod"
 
 image:
   repository: "ghcr.io/YOURORG/vsftpd_container:latest"
-imagePullPolicy: IfNotPresent
-
-# Ports exposed by the container
-containerPorts:
-  ftp: 21
-  sftp: 22
-  pasvmin: 32022
-  pasvmax: 32041
+  pullPolicy: IfNotPresent
 
 # Where the users.json gets mounted inside the container
 userConfigPath: "/etc/vsftpd/users.json"
-
-# External address used by PASV replies (set to your LB IP/DNS)
-pasvAddress: "ftp.example.com"
 
 # JSON formatted users file; keys are usernames, values are SHA-512 password hashes
 users: |
@@ -61,8 +51,27 @@ users: |
   }
 
 service:
-  # ClusterIP for internal-only; LoadBalancer/NodePort for external access
-  type: ClusterIP
+  sftp:
+    type: LoadBalancer  # SFTP service type
+    port: 22
+    publicIPv4: ""  # Public IP for the SFTP service, if needed
+  ftp:
+    type: LoadBalancer  # FTP service type
+    publicIPv4: ""  # Public IPv4 for the FTP service, if needed
+    pasvAddress: "ftp.example.com"  # External address used by PASV replies
+    controlPort: 21   # FTP control port
+    pasvMinPort: 10000  # Minimum passive port
+    pasvMaxPort: 10025  # Maximum passive port
+  loadBalancerSourceRanges: # Sets allowed Source IP's for the LoadBalancer
+    - "0.0.0.0/0"  # Adjust to your needs
+
+# Resource limits and requests
+resources:
+  limits:
+    memory: "512Mi"
+  requests:
+    memory: "128Mi"
+    cpu: "50m"
 
 # Replica count; defaults to 1 if omitted
 replicaCount: 1
@@ -71,7 +80,7 @@ replicaCount: 1
 2. Install the chart:
 
 ```bash
-hhelm install vsftpd oci://dogsbody.azurecr.io/helm/vsftpd --version <Version Number>
+helm install vsftpd oci://dogsbody.azurecr.io/helm/vsftpd --version <Version Number>
 ```
 
 ---
@@ -80,43 +89,53 @@ hhelm install vsftpd oci://dogsbody.azurecr.io/helm/vsftpd --version <Version Nu
 
 | Key                      | Type          | Default                  | Description                                                                                                  |
 | ------------------------ | ------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `namespace`              | string        | *required*               | Namespace to deploy into. The chart includes a `Namespace` manifest and will create it if it does not exist. |
+| `namespace`              | string        | `"vsftpd"`               | Namespace to deploy into. The chart includes a `Namespace` manifest and will create it if it does not exist. |
 | `environment`            | string        | `"dev"`                  | Label value applied to resources.                                                                            |
 | `replicaCount`           | int           | `1`                      | Number of pod replicas.                                                                                      |
-| `image.repository`       | string        | *required*               | Container image reference (e.g., `ghcr.io/yourorg/vsftpd_container:tag`).                                    |
-| `imagePullPolicy`        | string        | `IfNotPresent`           | Pod image pull policy.                                                                                       |
-| `containerPorts.ftp`     | int           | `21`                     | FTP control port exposed by the container.                                                                   |
-| `containerPorts.sftp`    | int           | `22`                     | SFTP/SSH port exposed by the container.                                                                      |
-| `containerPorts.pasvmin` | int           | `32022`                  | Minimum passive data port exposed by the container.                                                          |
-| `containerPorts.pasvmax` | int           | `32041`                  | Maximum passive data port exposed by the container.                                                          |
+| `minAvailable`           | int           | `1`                      | Minimum available pods for PodDisruptionBudget.                                                             |
+| `image.repository`       | string        | `dogsbody.azurecr.io/vsftpd:v1.1.0` | Container image reference.                                                                     |
+| `image.pullPolicy`       | string        | `always`                 | Pod image pull policy.                                                                                       |
+| `image.tag`              | string        | `""`                     | Overrides the image tag whose default is the chart appVersion.                                               |
+| `service.sftp.type`      | string        | `LoadBalancer`           | SFTP service type: `ClusterIP`, `NodePort`, or `LoadBalancer`.                                               |
+| `service.sftp.port`      | int           | `22`                     | SFTP/SSH port.                                                                                               |
+| `service.sftp.publicIPv4`| string        | `""`                     | Public IPv4 for the SFTP service, if needed.                                                                |
+| `service.ftp.type`       | string        | `LoadBalancer`           | FTP service type: `ClusterIP`, `NodePort`, or `LoadBalancer`.                                                |
+| `service.ftp.publicIPv4` | string        | `""`                     | Public IPv4 for the FTP service, if needed.                                                                 |
+| `service.ftp.pasvAddress`| string        | `""`                     | External IP/hostname included in PASV replies; **must** be reachable by clients.                             |
+| `service.ftp.controlPort`| int           | `21`                     | FTP control port.                                                                                            |
+| `service.ftp.pasvMinPort`| int           | `10000`                  | Minimum passive data port.                                                                                   |
+| `service.ftp.pasvMaxPort`| int           | `10025`                  | Maximum passive data port.                                                                                   |
+| `service.loadBalancerSourceRanges` | array | `[""]`                   | Sets allowed Source IP's for the LoadBalancer.                                                              |
 | `userConfigPath`         | string        | `/etc/vsftpd/users.json` | Mount target where `users.json` is provided. The pod sets `USER_CONFIG_PATH` env var to this.                |
-| `users`                  | string (JSON) | *required*               | JSON map of `username: sha512-password-hash`. Mounted as `users.json` via ConfigMap.                         |
-| `pasvAddress`            | string        | none                     | External IP/hostname included in PASV replies; **must** be reachable by clients.                             |
-| `service.type`           | string        | `ClusterIP`              | Service type: `ClusterIP`, `NodePort`, or `LoadBalancer`.                                                    |
+| `users`                  | string (JSON) | `{}`                     | JSON map of `username: sha512-password-hash`. Mounted as `users.json` via ConfigMap.                         |
+| `resources.limits.memory`| string        | `"512Mi"`                | Memory limit for the container.                                                                              |
+| `resources.requests.memory`| string      | `"128Mi"`                | Memory request for the container.                                                                            |
+| `resources.requests.cpu` | string        | `"50m"`                  | CPU request for the container.                                                                               |
+| `storageClassName`       | string        | `""`                     | StorageClass for dynamic PVC provisioning. If empty, uses cluster default.                                   |
 
-> **Note on naming:** The Service opens named ports for `ftp`, `sftp`, `pasvmin`, and `pasvmax`. Ensure your firewall and cloud LB allow the full PASV range.
+> **Note on services:** The chart creates **two separate services** - one for SFTP and one for FTP with all its passive ports. Each service can have different types and load balancer configurations. Ensure your firewall and cloud LB allow the full PASV range for the FTP service.
 
 ---
 
 ## Storage
 
-By default the chart ships with **static** storage manifests:
+The chart creates a `PersistentVolumeClaim` requesting `10Gi` of storage. By default:
 
-- `PersistentVolume` using `hostPath: /data` with `10Gi` capacity
-- `PersistentVolumeClaim` requesting `10Gi`
+- The PVC uses the cluster's default StorageClass for dynamic provisioning
+- If you need a specific StorageClass, set `storageClassName` in your values
+- The static `PersistentVolume` manifest is commented out (not created by default)
 
-This is **not** appropriate for cloud clusters. Prefer a dynamic PVC bound by `storageClassName` instead. To do so, remove/disable the bundled `PersistentVolume` and set a PVC template or inject your own PVC:
+This approach works well for cloud clusters with dynamic provisioning. The container mounts the PVC at `/data`.
 
-### Option A — Provide a pre-created PVC
+### Using a specific StorageClass
 
-1. Create your own PVC (backed by a StorageClass).
-2. Modify the Deployment template or chart values to reference that PVC name.
+```yaml
+storageClassName: "fast-ssd"  # Your preferred StorageClass
+```
 
-### Option B — Make PV/PVC optional (recommended change)
+### Using static volumes (not recommended)
 
-If you plan to extend this chart, make the PV/PVC manifests conditional with a value like `persistence.enabled` and support `persistence.storageClass` and `persistence.size`.
-
-The container mounts the PVC at `/data`.
+If you need static volumes, uncomment the PV section in `templates/volumes.yml` and adjust the `hostPath` or configure your preferred volume type.
 
 ---
 
@@ -143,22 +162,53 @@ The container mounts the PVC at `/data`.
 
 FTP passive mode requires the server to advertise an **external address** and to have a **contiguous port range** open end‑to‑end:
 
-- Set `pasvAddress` to your public IP or DNS name.
-- Ensure `containerPorts.pasvmin..pasvmax` are open on the Kubernetes `Service` and any LB/firewall.
-- If you run behind a cloud LoadBalancer, use a **static** public IP and health checks on the control port.
+- Set `service.ftp.pasvAddress` to your public IP or DNS name
+- Configure `service.ftp.pasvMinPort` and `service.ftp.pasvMaxPort` for your passive range
+- The FTP service automatically exposes all ports in the passive range
+- If you run behind a cloud LoadBalancer, use a **static** public IP and health checks on the control port
 
-For internal-only use, keep `service.type=ClusterIP` and connect from within the cluster/VPN.
+**Service Configuration:**
+- **SFTP Service**: Separate service for SSH/SFTP traffic (port 22)
+- **FTP Service**: Handles FTP control port (21) and all passive data ports
+
+For internal-only use, set both `service.sftp.type` and `service.ftp.type` to `ClusterIP` and connect from within the cluster/VPN.
+
+---
+
+## Resource Management
+
+The chart supports configurable resource limits and requests:
+
+```yaml
+resources:
+  limits:
+    memory: "512Mi"      # Maximum memory usage
+  requests:
+    memory: "128Mi"      # Guaranteed memory allocation
+    cpu: "50m"           # Guaranteed CPU allocation (50 millicores)
+```
+
+Adjust these values based on your expected load and cluster capacity.
+
+---
+
+The chart includes a `PodDisruptionBudget` to ensure service availability during cluster maintenance:
+
+- `minAvailable`: Minimum number of pods that must remain available (default: 1)
+- Protects against voluntary disruptions (node drains, upgrades, etc.)
+- Configure via `minAvailable` value in your values file
 
 ---
 
 ## Resources created
 
 - `Namespace` (name from `values.namespace`)
-- `Deployment` `<release>-deploy`
-- `Service` `<release>-svc`
+- `Deployment` `<release>-server`
+- `Service` `<release>-sftp-svc` (for SFTP traffic)
+- `Service` `<release>-ftp-svc` (for FTP control and passive data ports)
 - `ConfigMap` `<release>-users-config`
-- `PersistentVolume` `<release>-pv` (hostPath)
 - `PersistentVolumeClaim` `<release>-pvc`
+- `PodDisruptionBudget` `vsftpd-pdb`
 
 ---
 
@@ -174,21 +224,27 @@ This removes chart-managed Kubernetes resources. Manually delete any static PVs 
 
 ## Roadmap / suggested improvements
 
-- Make PV/PVC optional (`persistence.enabled`) and support dynamic provisioning
+- ✅ Add `resources` limits/requests (implemented)
+- ✅ Add `PodDisruptionBudget` support (implemented)
+- ✅ Support dynamic PVC provisioning with `storageClassName` (implemented)
+- ✅ Expose `image.tag` separately from `image.repository` (implemented)
+- ✅ Create separate services for FTP and SFTP (implemented)
+- Make PV/PVC optional with `persistence.enabled` flag
 - Support `Secret` for users (and mount as file)
-- Add `resources` limits/requests
 - Add `liveness`/`readiness` probes
-- Expose `image.tag` separately from `image.repository`
-- Fix potential naming drift between values used in env vs. ports (`pasvMin/Max` vs `pasvmin/max`)
 - Document a chart repo and release the package
+- Add support for custom annotations and labels on services
+- Support for multiple storage volumes
 
 ---
 
 ## Troubleshooting
 
-- **500 Series FTP errors:** usually PASV not reachable; verify `pasvAddress` and firewall
+- **500 Series FTP errors:** usually PASV not reachable; verify `service.ftp.pasvAddress` and firewall rules
 - **Auth failures:** confirm SHA-512 hash format in `users.json`
-- **Data not persistent:** storage still `hostPath`; switch to a real StorageClass-backed PVC
+- **Data not persistent:** check PVC status and StorageClass availability
+- **Pod startup issues:** verify resource limits and image availability
+- **Service connectivity:** ensure LoadBalancer has been assigned external IPs
 
 ---
 
